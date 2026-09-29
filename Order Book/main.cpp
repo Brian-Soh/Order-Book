@@ -306,7 +306,7 @@ public:
         orders_.erase(order_id);
     }
 
-    Trades matchOrder(OrderModify order) {
+    Trades updateOrder(OrderModify order) {
         if (!orders_.contains(order.getOrderId())) return { };
         
         const auto& [existingOrder, _] = orders_.at(order.getOrderId());
@@ -465,6 +465,90 @@ int main(int argc, const char * argv[]) {
     OrderBookLevelInfos info9 = orderBook.getOrderInfos();
     printCurrentAsks(info9.getAsks());
     printCurrentBids(info9.getBids());
+
+	// Example: Update Order Price
+	std::cout << "******************** Update Order Price Example ********************" << std::endl;
+
+	OrderId updateId1 = currId;
+
+	std::cout << "Add GoodTillCancel Buy Order - Price: 95, Quantity: 10" << std::endl;
+	orderBook.addOrder(
+	    std::make_shared<Order>(
+	        OrderType::GoodTillCancel,
+	        currId,
+	        Side::Buy,
+	        95,
+	        10
+	    )
+	);
+	currId++;
+
+	std::cout << "Update Buy Order - Price: 99, Quantity: 10" << std::endl;
+	orderBook.updateOrder(
+	OrderModify{
+		updateId1,
+		Side::Buy,
+		99,
+		10
+	}
+	);
+
+	OrderBookLevelInfos updateInfo1 = orderBook.getOrderInfos();
+	printCurrentAsks(updateInfo1.getAsks());
+	printCurrentBids(updateInfo1.getBids());
+
+	// Example: Update Order Price Causes Complete Fill
+	std::cout << "******************** Update Order Price Causes Complete Fill Example ********************" << std::endl;
+
+	// Add resting sell order at 100
+	std::cout << "Add GoodTillCancel Sell Order - Price: 100, Quantity: 10" << std::endl;
+	orderBook.addOrder(
+	    std::make_shared<Order>(
+	        OrderType::GoodTillCancel,
+	        currId,
+	        Side::Sell,
+	        100,
+	        10
+	    )
+	);
+	currId++;
+
+	// Add resting buy order at 95
+	OrderId updateId = currId;
+
+	std::cout << "Add GoodTillCancel Buy Order - Price: 95, Quantity: 10" << std::endl;
+	orderBook.addOrder(
+	    std::make_shared<Order>(
+	        OrderType::GoodTillCancel,
+	        currId,
+	        Side::Buy,
+	        95,
+	        10
+	    )
+	);
+	currId++;
+
+	OrderBookLevelInfos orderInfo = orderBook.getOrderInfos();
+
+	printCurrentAsks(orderInfo.getAsks());
+	printCurrentBids(orderInfo.getBids());
+	
+
+	// Change buy price from 95 -> 100
+	// This now crosses the best ask and should completely fill
+	std::cout << "Update Buy Order - Price: 100, Quantity: 10" << std::endl;
+	orderBook.updateOrder(
+	OrderModify{
+		updateId,
+		Side::Buy,
+		100,
+		10
+	}
+	);
+
+	OrderBookLevelInfos updateInfo2 = orderBook.getOrderInfos();
+	printCurrentAsks(updateInfo2.getAsks());
+	printCurrentBids(updateInfo2.getBids());
     
     return 0;
 }
